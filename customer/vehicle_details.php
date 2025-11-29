@@ -1,5 +1,5 @@
 <?php
-include("../config/db_connection.php");
+include("../config/db.php");
 
 // Check if ID exists
 if (!isset($_GET['id'])) {

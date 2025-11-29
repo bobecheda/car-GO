@@ -29,92 +29,124 @@ if ($result === false) {
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>My Bookings</title>
+    <meta charset="UTF-8">    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <style>
+        :root { --bg:#f5f7fa; --surface:#ffffff; --text:#1b2a3a; --muted:#6b7a8c; --border:#e3edf6; --accent:#3498db; --accent2:#1abc9c; --shadow:0 12px 30px rgba(20,40,80,0.12); --green:#16a085; --red:#e74c3c; --orange:#e67e22; --blue:#3498db; }
+        * { box-sizing:border-box; }
+        body { margin:0; background: linear-gradient(180deg, var(--bg) 0%, #eef3f8 100%); color:var(--text); font-family: "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+        /* Header */
+        .header { position: sticky; height: 60px; top: 0; z-index: 1200; background: linear-gradient(180deg, #f7fbff 0%, var(--surface) 100%); border-bottom:1px solid var(--border); }
+        .header-inner { display:flex; align-items:center; justify-content:space-between; padding:10px 16px; max-width:1200px; margin:0 auto; }
+        .left { display:flex; align-items:center; gap:10px; }
+        .brand { font-weight:700; letter-spacing:.3px; }
+        .hamburger { display:inline-flex; flex-direction:column; gap:4px; padding:8px; border-radius:10px; border:1px solid var(--border); background:var(--surface); cursor:pointer; }
+        .hamburger span { width:18px; height:2px; background:var(--text); border-radius:2px; }
+        .right { display:flex; align-items:center; gap:10px; }
+        .avatar { width:36px; height:36px; border-radius:50%; background: linear-gradient(180deg,#e3edf6,#ffffff); border:1px solid var(--border); display:flex; align-items:center; justify-content:center; color:#2b3e50; font-weight:700; cursor:pointer; overflow:hidden; }
 
-    <!-- Bootstrap -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
-
+                .sidebar { position: fixed; left: 0; top: 60px; width: 240px; height: 100vh; background: linear-gradient(180deg, var(--surface) 0%, #f7fbff 100%); border-right:1px solid var(--border); box-shadow: var(--shadow); padding:18px; overflow-y:auto; transform: translateX(0); transition: transform .25s ease; z-index: 900; }
+        body.sidebar-collapsed .sidebar { transform: translateX(-100%); }
+        .nav { list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:6px; }
+        .nav a { display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:10px; color:var(--text); text-decoration:none; border:1px solid var(--border); background: var(--surface); transition: transform .18s ease, box-shadow .18s ease; }
+        .nav a:hover { transform: translateX(2px); box-shadow: var(--shadow); }
+        .nav a.active { background: linear-gradient(180deg, #eaf3fb 0%, #ffffff 100%); }
+        /* Layout */
+        .page { margin-left:240px; padding:16px; transition: margin-left .25s ease; }
+        body.sidebar-collapsed .page { margin-left:0; }
+        /* Alerts */
+        .alert { margin:10px 0; padding:10px 12px; border-radius:12px; border:1px solid var(--border); background: linear-gradient(180deg,#eaf3fb,#f7fbff); color:#2b3e50; box-shadow: var(--shadow); }
+        /* Table */
+        .table { width:100%; border-collapse: separate; border-spacing:0; background: var(--surface); color: var(--text); border:1px solid var(--border); border-radius:16px; box-shadow: var(--shadow); overflow:hidden; opacity:0; transition: opacity .35s ease; }
+        .table thead th { text-align:left; padding:12px 14px; background: linear-gradient(180deg, #eaf3fb 0%, #ffffff 100%); color:#2b3e50; font-weight:600; border-bottom:1px solid var(--border); }
+        .table tbody td { padding:12px 14px; border-bottom:1px solid var(--border); vertical-align: middle; }
+        .table tbody tr { transition: background .18s ease; }
+        .table tbody tr:nth-child(even) { background: rgba(20,40,80,0.03); }
+        .table tbody tr:hover { background: rgba(20,40,80,0.06); }
+        .status-badge { display:inline-block; padding:6px 10px; border-radius:999px; font-size:12px; border:1px solid var(--border); }
+        .status-approved { background: rgba(22,160,133,0.15); color:#0b3f34; }
+        .status-pending { background: rgba(230,126,34,0.15); color:#5a3415; }
+        .status-rejected { background: rgba(231,76,60,0.15); color:#5e1f1a; }
+        .status-completed { background: rgba(52,152,219,0.15); color:#1a3e56; }
+        .icon { width:16px; height:16px; display:inline-block; margin-right:6px; vertical-align:middle; }
+        .spinner { display:none; width:36px; height:36px; border-radius:50%; border:3px solid #cfe0f2; border-top-color:#3498db; animation: spin 0.8s linear infinite; margin:16px auto; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        @media (max-width: 768px){ .page{ margin-left:0; padding:12px; } .sidebar { transform: translateX(-100%); } body.sidebar-open .sidebar { transform: translateX(0); } .table thead { display:none; } .table, .table tbody, .table tr, .table td { display:block; width:100%; } .table tbody tr { margin-bottom:12px; border:1px solid var(--border); border-radius:12px; padding:10px; } .table td { border:none; padding:8px 10px; } }
+    </style>
 </head>
-<body class="bg-light">
-
-<div class="container py-4">
-    <h2 class="mb-4 text-center">My Bookings</h2>
-    <?php
-// Show latest admin messages for logged-in user
-$msg_sql = "
-SELECT admin_message 
-FROM bookings 
-WHERE user_id = $user_id AND admin_message IS NOT NULL AND status IN ('approved','rejected')
-ORDER BY start_date DESC
-LIMIT 5
-";
-$msg_res = mysqli_query($conn, $msg_sql);
-if ($msg_res) {
-    while ($msg = mysqli_fetch_assoc($msg_res)) {
-        echo "<div class='alert alert-info'>" . htmlspecialchars($msg['admin_message']) . "</div>";
-    }
-} else {
-    // optional: log error
-    if ($msg_res === false) error_log("my_bookings msg query error: " . mysqli_error($conn));
-}
-?>
-
-
-    <table class="table table-bordered bg-white">
-        <thead class="table-dark">
-            <tr>
-                <th>#</th>
-                <th>Car</th>
-                <th>Pickup Date</th>
-                <th>Return Date</th>
-                <th>Total Price (KES)</th>
-                <th>Status</th>
-                <th>Action</th>
-                <th>Admin Message</th>
-            </tr>
-        </thead>
-        <tbody>
-            <?php
-            $i = 1;
-            if ($result && mysqli_num_rows($result) > 0) {
-                while ($row = mysqli_fetch_assoc($result)) {
-                ?>
-            <tr>
-                <td><?php echo $i++; ?></td>
-                    <td><?php echo htmlspecialchars($row['brand'] . " " . $row['model']); ?></td>
-                    <td><?php echo htmlspecialchars($row['start_date']); ?></td>
-                    <td><?php echo htmlspecialchars($row['end_date']); ?></td>
-                    <td><?php echo number_format((float)$row['total_price']); ?></td>
-                    <td><?php echo htmlspecialchars(ucfirst($row['status'])); ?></td>
-                <td>
-                    <?php if ($row['status'] == 'pending') { ?>
-                        <a href="cancel_booking.php?id=<?php echo $row['id']; ?>" 
-                           class="btn btn-sm btn-danger" 
-                           onclick="return confirm('Are you sure you want to cancel this booking?');">
-                           Cancel
-                        </a>
-                    <?php } else { echo "-"; } ?>
-                </td>
-                    <td>
-                         <?php 
-                         if (!empty($row['admin_message'])) {
-                             echo "<span class='badge bg-info text-dark'>" . htmlspecialchars($row['admin_message']) . "</span>";
-                         } else {
-                             echo "-";
-                         }
-                         ?>
-                     </td>
-            </tr>
+<body>
+    <div class="header">
+        <div class="header-inner">
+            <div class="left">
+                <button class="hamburger" id="hamburger" aria-label="Toggle sidebar"><span></span><span></span><span></span></button>
+                <div class="brand">Customer Dashboard</div>
+            </div>
+            <div class="right">
+                <div class="avatar"><i class="fa-solid fa-user"></i></div>
+            </div>
+        </div>
+    </div>
+    <aside class="sidebar">
+        <ul class="nav">
+            <li><a href="index.php"><i class="fa-solid fa-gauge"></i><span>Dashboard</span></a></li>
+            <li><a href="booking.php"><i class="fa-solid fa-list-check"></i><span>My activities</span></a></li>
+            <li><a class="active" href="my_bookings.php"><i class="fa-solid fa-clock-rotate-left"></i><span>History</span></a></li>
+            <li><a href="profile.php"><i class="fa-solid fa-user"></i><span>Profile</span></a></li>
+            <li><a href="../pages/index.php"><i class="fa-solid fa-right-from-bracket"></i><span>Logout</span></a></li>
+        </ul>
+    </aside>
+    <main class="page">
+        <div class="alert">My Bookings</div>
+        <div class="spinner" id="spinner"></div>
+        <?php if ($result && mysqli_num_rows($result) > 0): ?>
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Car</th>
+                    <th>Start Date</th>
+                    <th>End Date</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+            <?php while($row = mysqli_fetch_assoc($result)): ?>
                 <?php
+                    $status = isset($row['status']) ? strtolower($row['status']) : '';
+                    $badgeClass = 'status-pending';
+                    if($status === 'approved') { $badgeClass = 'status-approved'; }
+                    elseif($status === 'rejected') { $badgeClass = 'status-rejected'; }
+                    elseif($status === 'completed') { $badgeClass = 'status-completed'; }
+                    $carName = trim(($row['brand'] ?? '').' '.($row['model'] ?? ''));
+                ?>
+                <tr>
+                    <td><?php echo htmlspecialchars($carName ?: ''); ?></td>
+                    <td><?php echo htmlspecialchars($row['start_date'] ?? ''); ?></td>
+                    <td><?php echo htmlspecialchars($row['end_date'] ?? ''); ?></td>
+                    <td><span class="status-badge <?php echo $badgeClass; ?>"><?php echo htmlspecialchars($row['status'] ?? ''); ?></span></td>
+                </tr>
+            <?php endwhile; ?>
+            </tbody>
+        </table>
+        <?php else: ?>
+            <div class="alert">No bookings found.</div>
+        <?php endif; ?>
+    </main>
+    <script>
+    (function(){
+        var btn = document.getElementById('hamburger');
+        if(btn){
+            btn.addEventListener('click', function(){
+                if(window.innerWidth <= 768){
+                    document.body.classList.toggle('sidebar-open');
+                } else {
+                    document.body.classList.toggle('sidebar-collapsed');
                 }
-            } else {
-                echo '<tr><td colspan="8" class="text-center">You have no bookings yet.</td></tr>';
-            }
-        ?>
-        </tbody>
-    </table>
-</div>
-
+            });
+        }
+        window.addEventListener('load', function(){
+            var t = document.querySelector('.table');
+            if(t){ t.style.opacity = '1'; }
+        });
+    })();
+    </script>
 </body>
 </html>

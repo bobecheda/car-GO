@@ -17,7 +17,7 @@ $imageName = null;
 // Handle new image upload
 if (isset($_FILES['image']) && $_FILES['image']['name'] != "") {
     $imageName = time() . "_" . $_FILES['image']['name'];
-    $target = "uploads/" . $imageName;
+    $target = "../uploads/" . $imageName;
     move_uploaded_file($_FILES['image']['tmp_name'], $target);
 
     // Update with new image

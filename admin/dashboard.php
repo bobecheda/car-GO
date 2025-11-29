@@ -9,6 +9,7 @@ include '../config/db.php'; // make sure the path is correct
 
 
 // Total vehicles
+
 $result = mysqli_query($conn, "SELECT COUNT(*) AS total_vehicles FROM cars");
 $row = mysqli_fetch_assoc($result);
 $total_vehicles = $row['total_vehicles'];

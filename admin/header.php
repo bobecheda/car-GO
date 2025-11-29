@@ -9,7 +9,7 @@
         </div>
         <div class="header-actions">
             <span class="welcome-text">Welcome, <?php echo $_SESSION['name']; ?></span>
-            <a href="../logout.php" class="logout-link">Logout</a>
+            <a href="../pages/index.php" class="logout-link">Logout</a>
         </div>
     </div>
 </header>

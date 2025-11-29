@@ -116,7 +116,7 @@ if (!$vehicle) {
             <div class="image-section">
                 <div class="current-image">
                     <div class="form-label">Current Image</div>
-                    <img src="uploads/<?php echo $vehicle['image_url']; ?>" alt="Current image">
+                    <img src="../uploads/<?php echo $vehicle['image_url']; ?>" alt="Current image">
                 </div>
                 <div class="upload-box">
                     <div class="form-group">

@@ -1,22 +1,26 @@
 <?php
-// process_booking.php — Handles booking form submission
+// ---------------------------
+// process_booking.php
+// ---------------------------
 
+// 1. Start session FIRST
+if (session_status() === PHP_SESSION_NONE) session_start();
+
+// 2. Include DB connection BEFORE anything else
 if (file_exists(__DIR__ . '/../config/db.php')) {
     include __DIR__ . '/../config/db.php';
 } else {
     die("Database connection file missing.");
 }
 
-// ensure session is started and get current user id
-if (session_status() === PHP_SESSION_NONE) session_start();
+// 3. User must be logged in
 if (!isset($_SESSION['user_id'])) {
     die('You must be logged in to make a booking.');
 }
 
-// make sure user id is an integer
 $user_id = (int) $_SESSION['user_id'];
 
-// Get POST data
+// 4. Get POST data BEFORE logging activity
 $car_id = isset($_POST['car_id']) ? intval($_POST['car_id']) : 0;
 $name = isset($_POST['customer_name']) ? mysqli_real_escape_string($conn, trim($_POST['customer_name'])) : '';
 $email = isset($_POST['customer_email']) ? mysqli_real_escape_string($conn, trim($_POST['customer_email'])) : '';
@@ -25,7 +29,22 @@ $pickup = isset($_POST['pickup_date']) ? mysqli_real_escape_string($conn, trim($
 $return = isset($_POST['return_date']) ? mysqli_real_escape_string($conn, trim($_POST['return_date'])) : '';
 $payment = isset($_POST['payment_method']) ? mysqli_real_escape_string($conn, trim($_POST['payment_method'])) : '';
 
-// Validate dates
+// 5. Now include log_activity (AFTER $conn and session exist)
+include 'log_activity.php';
+
+// Log the booking attempt
+log_activity(
+    $conn,
+    $user_id,
+    "book_vehicle",
+    "Begin booking process for car ID: $car_id",
+    "process_booking.php"
+);
+
+// ---------------------------
+// VALIDATION
+// ---------------------------
+
 if (strtotime($pickup) > strtotime($return)) {
     die("Pickup date cannot be after return date.");
 }
@@ -54,7 +73,7 @@ $car = mysqli_fetch_assoc($car_res);
 $price_per_day = $car['price_per_day'];
 
 // Calculate total days
-$days = (strtotime($return) - strtotime($pickup)) / (60*60*24);
+$days = (strtotime($return) - strtotime($pickup)) / (60 * 60 * 24);
 if ($days <= 0) { $days = 1; }
 
 $total_price = $days * $price_per_day;
@@ -70,8 +89,18 @@ if (mysqli_query($conn, $sql)) {
     // Mark car as booked
     mysqli_query($conn, "UPDATE cars SET status='booked' WHERE id=$car_id");
 
+    // Log success
+    log_activity(
+        $conn,
+        $user_id,
+        "booking_success",
+        "Successfully booked car ID: $car_id",
+        "process_booking.php"
+    );
+
     header("Location: booking_success.php?booking=1");
     exit;
+
 } else {
     echo "Error: " . mysqli_error($conn);
 }
